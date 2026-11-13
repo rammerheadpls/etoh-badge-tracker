@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Eternal Towers of Hell badge tracker</title>
+<style>
+:root {
+  --bg:#dfecfa; --surface:#fff; --ink:#14213d; --muted:#556684; --line:#bfd1e8;
+  --gold:#f2b01e; --gold-ink:#7a5400; --blue:#2f5bea; --on-blue:#fff; --err:#b3261e;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:#0f1830; --surface:#18233f; --ink:#e8eefa; --muted:#9db0d3; --line:#2a3a5f;
+    --gold:#f5c04a; --gold-ink:#f5d78a; --blue:#8aa4ff; --on-blue:#0f1830; --err:#ff8a80;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 "Avenir Next","Segoe UI",system-ui,sans-serif; }
+main { max-width:960px; margin:0 auto; padding:40px 20px 64px; }
+h1 { margin:0 0 8px; font-size:clamp(1.9rem,5vw,2.9rem); line-height:1.1; font-weight:800; letter-spacing:-.02em; }
+.sub { margin:0 0 26px; max-width:56ch; color:var(--muted); }
+:focus-visible { outline:3px solid var(--gold); outline-offset:2px; }
+form { display:flex; gap:10px; flex-wrap:wrap; }
+input { font:inherit; color:var(--ink); background:var(--surface); border:2px solid var(--line); border-radius:10px; padding:11px 14px; }
+#user { flex:1 1 220px; min-width:0; }
+button { font:inherit; cursor:pointer; }
+#go { padding:11px 22px; font-weight:700; color:var(--on-blue); background:var(--blue); border:0; border-radius:10px; }
+#go:disabled { opacity:.6; cursor:wait; }
+#status { min-height:1.5em; margin:12px 0 0; color:var(--muted); }
+#status.err { color:var(--err); font-weight:600; }
+.summary { margin:24px 0 18px; padding:20px; background:var(--surface); border:1px solid var(--line); border-radius:16px; }
+.who { margin:0 0 4px; color:var(--muted); }
+.who a { color:inherit; }
+.count { margin:0 0 12px; font-size:1.5rem; font-weight:800; }
+.bar { height:14px; background:var(--line); border-radius:7px; overflow:hidden; }
+#fill { height:100%; width:0; background:var(--gold); border-radius:7px; transition:width .5s ease; }
+.hint { margin:12px 0 0; font-size:.9rem; color:var(--muted); }
+.tools { display:flex; gap:10px; flex-wrap:wrap; justify-content:space-between; margin-bottom:14px; }
+.tabs { display:flex; gap:6px; flex-wrap:wrap; }
+.tab { padding:8px 14px; font-weight:600; color:var(--ink); background:transparent; border:2px solid var(--line); border-radius:999px; }
+.tab[aria-pressed="true"] { background:var(--ink); color:var(--bg); border-color:var(--ink); }
+#filter { flex:0 1 240px; min-width:0; padding:8px 14px; }
+.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; }
+.badge { display:flex; gap:12px; padding:12px; background:var(--surface); border:1px solid var(--line); border-left:5px solid var(--line); border-radius:6px 14px 14px 6px; }
+.badge.owned { border-color:var(--gold); }
+.badge img, .badge .ph { flex:none; width:64px; height:64px; border-radius:10px; background:var(--line); }
+.badge:not(.owned) img { filter:grayscale(1); opacity:.5; }
+.badge h3 { margin:0; font-size:1rem; line-height:1.25; }
+.badge .desc { margin:2px 0 6px; font-size:.85rem; color:var(--muted); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.badge .when { margin:0; font-size:.85rem; font-weight:600; color:var(--muted); }
+.badge.owned .when { color:var(--gold-ink); }
+.empty { grid-column:1/-1; color:var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Eternal Towers of Hell badges</h1>
+  <p class="sub">Enter a Roblox username to see which of the game’s badges that player has earned and which are still missing.</p>
+
+  <form id="form">
+    <input id="user" type="text" placeholder="Roblox username" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Roblox username">
+    <button id="go" type="submit">Check badges</button>
+  </form>
+  <p id="status" role="status"></p>
+
+  <section id="results" hidden>
+    <div class="summary">
+      <p class="who" id="who"></p>
+      <p class="count"><span id="n-owned"></span> of <span id="n-total"></span> badges earned</p>
+      <div class="bar" id="bar" role="progressbar" aria-label="Badges earned" aria-valuemin="0" aria-valuemax="100"><div id="fill"></div></div>
+      <p class="hint" id="hint" hidden>No badges found. If this player’s inventory is private, Roblox doesn’t share their badges, so every badge shows as not earned.</p>
+    </div>
+    <div class="tools">
+      <div class="tabs" role="group" aria-label="Show badges">
+        <button class="tab" type="button" data-tab="all" data-label="All">All</button>
+        <button class="tab" type="button" data-tab="owned" data-label="Owned">Owned</button>
+        <button class="tab" type="button" data-tab="unowned" data-label="Unowned">Unowned</button>
+      </div>
+      <input id="filter" type="search" placeholder="Filter by name" aria-label="Filter badges by name">
+    </div>
+    <div class="grid" id="grid"></div>
+  </section>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const state = { data: null, tab: "all", q: "" };
+
+function el(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = text;
+  return n;
+}
+function setStatus(msg, isError) {
+  const s = $("#status");
+  s.textContent = msg;
+  s.className = isError ? "err" : "";
+}
+
+const fmt = (iso) =>
+  new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+
+$("#form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const name = $("#user").value.trim();
+  if (!name) return;
+  $("#go").disabled = true;
+  $("#results").hidden = true;
+  setStatus("Checking badges…");
+  try {
+    const res = await fetch("/api/check?username=" + encodeURIComponent(name));
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json.error || "Something went wrong. Try again.");
+    state.data = json;
+    state.tab = "all";
+    setStatus("");
+    render();
+    $("#results").hidden = false;
+  } catch (err) {
+    setStatus(
+      err instanceof TypeError ? "Can’t reach the tracker server. Make sure it’s running." : err.message,
+      true
+    );
+  } finally {
+    $("#go").disabled = false;
+  }
+});
+
+document.querySelectorAll(".tab").forEach((t) =>
+  t.addEventListener("click", () => { state.tab = t.dataset.tab; render(); })
+);
+$("#filter").addEventListener("input", (e) => { state.q = e.target.value.trim().toLowerCase(); render(); });
+
+function render() {
+  const { user, badges } = state.data;
+  const owned = badges.filter((b) => b.awarded).length;
+  const total = badges.length;
+  const pct = total ? Math.round((owned / total) * 100) : 0;
+
+  const a = el("a", null, user.displayName === user.name ? user.name : `${user.displayName} (@${user.name})`);
+  a.href = `https://www.roblox.com/users/${user.id}/profile`;
+  a.target = "_blank";
+  a.rel = "noopener";
+  $("#who").replaceChildren(a);
+  $("#n-owned").textContent = owned;
+  $("#n-total").textContent = total;
+  $("#fill").style.width = pct + "%";
+  $("#bar").setAttribute("aria-valuenow", pct);
+  $("#hint").hidden = owned > 0;
+
+  document.querySelectorAll(".tab").forEach((t) => {
+    const k = t.dataset.tab;
+    const n = k === "all" ? total : k === "owned" ? owned : total - owned;
+    t.textContent = `${t.dataset.label} (${n})`;
+    t.setAttribute("aria-pressed", String(k === state.tab));
+  });
+
+  const shown = badges.filter(
+    (b) =>
+      (state.tab === "all" || (state.tab === "owned") === !!b.awarded) &&
+      (!state.q || b.name.toLowerCase().includes(state.q))
+  );
+
+  const grid = $("#grid");
+  grid.replaceChildren();
+  if (!shown.length) grid.append(el("p", "empty", "No badges match."));
+  for (const b of shown) {
+    const card = el("article", "badge" + (b.awarded ? " owned" : ""));
+    if (b.icon) {
+      const img = el("img");
+      img.src = b.icon;
+      img.alt = "";
+      img.width = img.height = 64;
+      img.loading = "lazy";
+      card.append(img);
+    } else {
+      card.append(el("div", "ph"));
+    }
+    const text = el("div");
+    const desc = el("p", "desc", b.description);
+    desc.title = b.description;
+    text.append(
+      el("h3", null, b.name),
+      desc,
+      el("p", "when", b.awarded ? (b.awarded === true ? "Earned" : "Earned " + fmt(b.awarded)) : "Not earned yet")
+    );
+    card.append(text);
+    grid.append(card);
+  }
+}
+</script>
+</body>
+</html>
