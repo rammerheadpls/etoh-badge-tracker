@@ -53,6 +53,52 @@ async function rbx(url, options = {}) {
   }
 }
 
+const CATEGORIES = require("./categories");
+const PREFIX = { T: "Tower", S: "Steeple", C: "Citadel" };
+// Ignore case, curly vs straight quotes, and extra spaces when matching names.
+const norm = (t) => t.replace(/[’‘]/g, "'").replace(/[“”]/g, '"').replace(/\s+/g, " ").trim().toLowerCase();
+
+function parseItem(item) {
+  const m = /^([TSC]):(.+)$/.exec(item);
+  if (m) {
+    const name = `Beat The ${PREFIX[m[1]]} of ${m[2]}`;
+    return { match: name, title: `${PREFIX[m[1]]} of ${m[2]}`, hasDesc: true };
+  }
+  const i = item.indexOf("|");
+  if (i >= 0) return { title: item.slice(0, i), match: item.slice(i + 1), hasDesc: true };
+  return { title: item, match: item, hasDesc: false };
+}
+
+// Put the game's badges into the categories from categories.js (in that order).
+// Anything not listed there goes in "Other" at the end; the server log reports any mismatches.
+function categorize(list) {
+  const buckets = new Map();
+  for (const b of list) {
+    const k = norm(b.name);
+    if (!buckets.has(k)) buckets.set(k, []);
+    buckets.get(k).push(b);
+  }
+  const used = new Set(), out = [], missing = [];
+  let listed = 0;
+  for (const cat of CATEGORIES) {
+    for (const item of cat.items) {
+      listed++;
+      const p = parseItem(item);
+      const b = (buckets.get(norm(p.match)) || []).shift();
+      if (!b) { missing.push(p.match); continue; }
+      used.add(b.id);
+      out.push({ id: b.id, title: p.title, description: p.hasDesc ? b.name : "", category: cat.name, icon: b.icon });
+    }
+  }
+  const extra = list.filter((b) => !used.has(b.id));
+  for (const b of extra) out.push({ id: b.id, title: b.name, description: "", category: "Other", icon: b.icon });
+  console.log(`Badges: ${listed} listed, ${out.length - extra.length} matched, ${missing.length} not found on Roblox, ${extra.length} on Roblox but not listed.`);
+  const show = (label, arr) => arr.length && console.warn(`${label}:\n  ` + arr.slice(0, 50).join("\n  ") + (arr.length > 50 ? `\n  …and ${arr.length - 50} more` : ""));
+  show("Listed but not found on Roblox", missing);
+  show("On Roblox but not listed (shown under Other)", extra.map((b) => b.name));
+  return out;
+}
+
 let gameCache = null; // { at, badges }
 
 async function loadBadges() {
@@ -81,12 +127,7 @@ async function loadBadges() {
     for (const x of t.data) icons[x.targetId] = x.imageUrl;
   }
 
-  const badges = raw.map((b) => ({
-    id: b.id,
-    name: b.name,
-    description: b.description || "",
-    icon: icons[b.id] || null,
-  }));
+  const badges = categorize(raw.map((b) => ({ id: b.id, name: b.name, icon: icons[b.id] || null })));
   gameCache = { at: Date.now(), badges };
   return badges;
 }

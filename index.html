@@ -38,6 +38,8 @@ button { font:inherit; cursor:pointer; }
 .bar { height:14px; background:var(--line); border-radius:7px; overflow:hidden; }
 #fill { height:100%; width:0; background:var(--gold); border-radius:7px; transition:width .5s ease; }
 .hint { margin:12px 0 0; font-size:.9rem; color:var(--muted); }
+.cat { margin:28px 0 12px; font-size:1.25rem; font-weight:800; }
+.cat small { margin-left:8px; font-size:.9rem; font-weight:600; color:var(--muted); }
 .tools { display:flex; gap:10px; flex-wrap:wrap; justify-content:space-between; margin-bottom:14px; }
 .tabs { display:flex; gap:6px; flex-wrap:wrap; }
 .tab { padding:8px 14px; font-weight:600; color:var(--ink); background:transparent; border:2px solid var(--line); border-radius:999px; }
@@ -81,7 +83,7 @@ button { font:inherit; cursor:pointer; }
       </div>
       <input id="filter" type="search" placeholder="Filter by name" aria-label="Filter badges by name">
     </div>
-    <div class="grid" id="grid"></div>
+    <div id="grid"></div>
   </section>
 </main>
 
@@ -162,13 +164,24 @@ function render() {
   const shown = badges.filter(
     (b) =>
       (state.tab === "all" || (state.tab === "owned") === !!b.awarded) &&
-      (!state.q || b.name.toLowerCase().includes(state.q))
+      (!state.q || (b.title + " " + b.description).toLowerCase().includes(state.q))
   );
 
   const grid = $("#grid");
   grid.replaceChildren();
   if (!shown.length) grid.append(el("p", "empty", "No badges match."));
+  const groups = new Map();
   for (const b of shown) {
+    if (!groups.has(b.category)) groups.set(b.category, []);
+    groups.get(b.category).push(b);
+  }
+  for (const [cat, items] of groups) {
+    const all = badges.filter((x) => x.category === cat);
+    const h = el("h2", "cat", cat);
+    h.append(el("small", null, `${all.filter((x) => x.awarded).length} of ${all.length}`));
+    const inner = el("div", "grid");
+    grid.append(h, inner);
+    for (const b of items) {
     const card = el("article", "badge" + (b.awarded ? " owned" : ""));
     if (b.icon) {
       const img = el("img");
@@ -184,12 +197,13 @@ function render() {
     const desc = el("p", "desc", b.description);
     desc.title = b.description;
     text.append(
-      el("h3", null, b.name),
-      desc,
+      el("h3", null, b.title),
+      ...(b.description ? [desc] : []),
       el("p", "when", b.awarded ? (b.awarded === true ? "Earned" : "Earned " + fmt(b.awarded)) : "Not earned yet")
     );
     card.append(text);
-    grid.append(card);
+    inner.append(card);
+    }
   }
 }
 </script>
