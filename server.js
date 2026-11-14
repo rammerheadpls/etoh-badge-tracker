@@ -71,25 +71,45 @@ function parseItem(item) {
 
 // Put the game's badges into the categories from categories.js (in that order).
 // Anything not listed there goes in "Other" at the end; the server log reports any mismatches.
+// Roblox's real names may lack notes like "(Unobtainable)" or "(CE2018)" that appear in the list,
+// so unmatched badges get a second pass that ignores those notes and punctuation.
+const strip = (t) => t.replace(/(\s*\((?:unobtainable|le|[a-z]{2}\d{4})\)?)+\s*$/i, "");
+const loose = (t) => strip(norm(t)).replace(/[^\p{L}\p{N}]+/gu, "");
+
 function categorize(list) {
-  const buckets = new Map();
-  for (const b of list) {
-    const k = norm(b.name);
-    if (!buckets.has(k)) buckets.set(k, []);
-    buckets.get(k).push(b);
-  }
-  const used = new Set(), out = [], missing = [];
-  let listed = 0;
-  for (const cat of CATEGORIES) {
-    for (const item of cat.items) {
-      listed++;
-      const p = parseItem(item);
-      const b = (buckets.get(norm(p.match)) || []).shift();
-      if (!b) { missing.push(p.match); continue; }
-      used.add(b.id);
-      out.push({ id: b.id, title: p.title, description: p.hasDesc ? b.name : "", category: cat.name, icon: b.icon });
+  const slots = [];
+  for (const cat of CATEGORIES) for (const item of cat.items) slots.push({ cat: cat.name, p: parseItem(item), b: null });
+  const used = new Set();
+  const passes = [
+    [(b) => norm(b.name), (s) => norm(s.p.match)],
+    [(b) => loose(b.name), (s) => loose(s.p.match)],
+  ];
+  for (const [keyOfBadge, keyOfSlot] of passes) {
+    const buckets = new Map();
+    for (const b of list) {
+      if (used.has(b.id)) continue;
+      const k = keyOfBadge(b);
+      if (!buckets.has(k)) buckets.set(k, []);
+      buckets.get(k).push(b);
+    }
+    for (const s of slots) {
+      if (s.b) continue;
+      const b = (buckets.get(keyOfSlot(s)) || []).shift();
+      if (b) { s.b = b; used.add(b.id); }
     }
   }
+  const out = [], missing = [];
+  for (const s of slots) {
+    if (!s.b) { missing.push(s.p.match); continue; }
+    out.push({
+      id: s.b.id,
+      title: s.p.hasDesc ? s.p.title : s.b.name,
+      description: s.p.hasDesc ? s.b.name : "",
+      category: s.cat,
+      icon: s.b.icon,
+    });
+  }
+  const listed = slots.length;
   const extra = list.filter((b) => !used.has(b.id));
   for (const b of extra) out.push({ id: b.id, title: b.name, description: "", category: "Other", icon: b.icon });
   console.log(`Badges: ${listed} listed, ${out.length - extra.length} matched, ${missing.length} not found on Roblox, ${extra.length} on Roblox but not listed.`);
@@ -201,6 +221,10 @@ http
       res.end(typeof body === "string" ? body : JSON.stringify(body));
     };
     try {
+      if (url.pathname === "/logo.png") {
+        res.writeHead(200, { "Content-Type": "image/png", "Cache-Control": "public, max-age=86400" });
+        return res.end(fs.readFileSync(path.join(__dirname, "logo.png")));
+      }
       if (url.pathname === "/") {
         return send(200, fs.readFileSync(path.join(__dirname, "index.html"), "utf8"), "text/html; charset=utf-8");
       }

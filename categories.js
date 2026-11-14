@@ -534,7 +534,7 @@ Citadel of Laptop Splitting: Secret Ending|Beyond the Citadel
 Tower of True Skill: Secret Ending|Another Secret Ending
 Tower of Oblivion: Secret Ending|Power in Misery
 Tower of Ultimately Terrifying: Secret Ending|Complete the Secret Ending
-Tower of Brutal and Bizzare Torment: Secret Ending|A Bizarre Secret Ending
+Tower of Brutal and Bizarre Torment: Secret Ending|A Bizarre Secret Ending
 # Secrets
 Secret Badge in ToR|Secret Badge
 Secret Room in ToH|Find the Room of Bad Inside Jokes
@@ -589,7 +589,7 @@ Present of Cheerful Fizz (Unobtainable) (CE2021)
 Present of Absolute Fizz (Unobtainable) (CE2021)
 Present of Fizz Incarnate (Unobtainable) (CE2021)
 Discover Terrain World! (Unobtainable) (AF2022)
-Defeated the Fishing Boat (Unobtainable) (AF2022
+Defeated the Fishing Boat (Unobtainable) (AF2022)
 GOOBIE'S (Unobtainable) (AF2022)
 Complex Ascent (Unobtainable) (HE2022)
 A Momentous Duel (Unobtainable) (HE2022)

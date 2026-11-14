@@ -4,33 +4,66 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Eternal Towers of Hell badge tracker</title>
+<link rel="icon" href="/logo.png">
 <style>
 :root {
-  --bg:#dfecfa; --surface:#fff; --ink:#14213d; --muted:#556684; --line:#bfd1e8;
+  --bg:#dfecfa; --bg-top:#b4d8ff; --surface:#fff; --ink:#14213d; --muted:#556684; --line:#bfd1e8;
   --gold:#f2b01e; --gold-ink:#7a5400; --blue:#2f5bea; --on-blue:#fff; --err:#b3261e;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg:#0f1830; --surface:#18233f; --ink:#e8eefa; --muted:#9db0d3; --line:#2a3a5f;
+    --bg:#0f1830; --bg-top:#0a1230; --surface:#18233f; --ink:#e8eefa; --muted:#9db0d3; --line:#2a3a5f;
     --gold:#f5c04a; --gold-ink:#f5d78a; --blue:#8aa4ff; --on-blue:#0f1830; --err:#ff8a80;
     color-scheme: dark;
   }
 }
+[hidden] { display:none !important; }
 * { box-sizing: border-box; }
-body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 "Avenir Next","Segoe UI",system-ui,sans-serif; }
-main { max-width:960px; margin:0 auto; padding:40px 20px 64px; }
-h1 { margin:0 0 8px; font-size:clamp(1.9rem,5vw,2.9rem); line-height:1.1; font-weight:800; letter-spacing:-.02em; }
-.sub { margin:0 0 26px; max-width:56ch; color:var(--muted); }
+body { margin:0; color:var(--ink); background:linear-gradient(180deg,var(--bg-top),transparent 520px),var(--bg); font:16px/1.5 "Avenir Next","Segoe UI",system-ui,sans-serif; }
+main { display:flex; flex-direction:column; max-width:960px; margin:0 auto; padding:32px 20px 64px; }
+body.landing main { min-height:100vh; justify-content:center; }
 :focus-visible { outline:3px solid var(--gold); outline-offset:2px; }
-form { display:flex; gap:10px; flex-wrap:wrap; }
-input { font:inherit; color:var(--ink); background:var(--surface); border:2px solid var(--line); border-radius:10px; padding:11px 14px; }
-#user { flex:1 1 220px; min-width:0; }
-button { font:inherit; cursor:pointer; }
-#go { padding:11px 22px; font-weight:700; color:var(--on-blue); background:var(--blue); border:0; border-radius:10px; }
-#go:disabled { opacity:.6; cursor:wait; }
-#status { min-height:1.5em; margin:12px 0 0; color:var(--muted); }
+
+/* header: big logo on the landing screen, compact once results are showing */
+.hero { display:flex; flex-direction:column; align-items:center; text-align:center; margin-bottom:22px; }
+#logo { width:min(440px,82vw); height:auto; filter:drop-shadow(0 10px 14px rgba(10,20,50,.3)); animation:bob 4s ease-in-out infinite; }
+h1 { margin:6px 0 4px; font-size:clamp(1.7rem,5vw,2.3rem); line-height:1.1; font-weight:800; letter-spacing:-.02em; }
+.sub { margin:0; max-width:46ch; color:var(--muted); }
+body:not(.landing) .hero { flex-direction:row; text-align:left; gap:16px; margin-bottom:18px; }
+body:not(.landing) #logo { width:110px; animation:none; }
+body:not(.landing) h1 { font-size:1.5rem; margin:0; }
+body:not(.landing) .sub, body:not(.landing) .note { display:none; }
+@keyframes bob { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-7px); } }
+
+/* username form */
+.entry { display:flex; gap:8px; width:100%; max-width:520px; margin:0 auto; padding:8px; background:var(--surface); border:2px solid var(--line); border-radius:18px; box-shadow:0 10px 26px rgba(20,33,61,.14); }
+.entry:focus-within { border-color:var(--blue); }
+body:not(.landing) .entry { margin:0; }
+#user { flex:1; min-width:0; padding:12px 14px; font:inherit; font-size:1.05rem; color:var(--ink); background:transparent; border:0; }
+#user:focus-visible { outline:none; }
+#go { padding:12px 22px; font:inherit; font-weight:800; color:var(--on-blue); background:var(--blue); border:0; border-radius:12px; box-shadow:0 4px 0 rgba(0,0,0,.28); cursor:pointer; }
+#go:active { transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.28); }
+.note { margin:14px auto 0; max-width:46ch; text-align:center; font-size:.9rem; color:var(--muted); }
+#status { min-height:1.5em; margin:12px 0 0; text-align:center; color:var(--muted); }
+body:not(.landing) #status { text-align:left; }
 #status.err { color:var(--err); font-weight:600; }
+
+/* loading screen */
+#loading { text-align:center; padding:10px 0; }
+.blocks { display:flex; gap:10px; justify-content:center; margin:6px 0 20px; }
+.blocks i { width:28px; height:28px; border-radius:7px; box-shadow:0 4px 0 rgba(0,0,0,.28); animation:hop 1s ease-in-out infinite; }
+.blocks i:nth-child(1) { background:#e8321f; }
+.blocks i:nth-child(2) { background:#f5a623; animation-delay:.12s; }
+.blocks i:nth-child(3) { background:#2fbf3a; animation-delay:.24s; }
+.blocks i:nth-child(4) { background:#2f8cf0; animation-delay:.36s; }
+@keyframes hop { 0%,100% { transform:translateY(0); } 40% { transform:translateY(-16px); } }
+.loading-title { margin:0 0 6px; font-size:1.25rem; font-weight:800; }
+#fact { min-height:4.5em; max-width:44ch; margin:0 auto; color:var(--muted); font-weight:600; transition:opacity .3s; }
+#fact.out { opacity:0; }
+@media (prefers-reduced-motion: reduce) { .blocks i, #logo { animation:none; } #fact { transition:none; } }
+
+/* results (unchanged) */
 .summary { margin:24px 0 18px; padding:20px; background:var(--surface); border:1px solid var(--line); border-radius:16px; }
 .who { margin:0 0 4px; color:var(--muted); }
 .who a { color:inherit; }
@@ -42,9 +75,9 @@ button { font:inherit; cursor:pointer; }
 .cat small { margin-left:8px; font-size:.9rem; font-weight:600; color:var(--muted); }
 .tools { display:flex; gap:10px; flex-wrap:wrap; justify-content:space-between; margin-bottom:14px; }
 .tabs { display:flex; gap:6px; flex-wrap:wrap; }
-.tab { padding:8px 14px; font-weight:600; color:var(--ink); background:transparent; border:2px solid var(--line); border-radius:999px; }
+.tab { padding:8px 14px; font:inherit; font-weight:600; color:var(--ink); background:transparent; border:2px solid var(--line); border-radius:999px; cursor:pointer; }
 .tab[aria-pressed="true"] { background:var(--ink); color:var(--bg); border-color:var(--ink); }
-#filter { flex:0 1 240px; min-width:0; padding:8px 14px; }
+#filter { flex:0 1 240px; min-width:0; padding:8px 14px; font:inherit; color:var(--ink); background:var(--surface); border:2px solid var(--line); border-radius:10px; }
 .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; }
 .badge { display:flex; gap:12px; padding:12px; background:var(--surface); border:1px solid var(--line); border-left:5px solid var(--line); border-radius:6px 14px 14px 6px; }
 .badge.owned { border-color:var(--gold); }
@@ -54,19 +87,29 @@ button { font:inherit; cursor:pointer; }
 .badge .desc { margin:2px 0 6px; font-size:.85rem; color:var(--muted); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 .badge .when { margin:0; font-size:.85rem; font-weight:600; color:var(--muted); }
 .badge.owned .when { color:var(--gold-ink); }
-.empty { grid-column:1/-1; color:var(--muted); }
+.empty { color:var(--muted); }
 </style>
 </head>
-<body>
+<body class="landing">
 <main>
-  <h1>Eternal Towers of Hell badges</h1>
-  <p class="sub">Enter a Roblox username to see which of the game’s badges that player has earned and which are still missing.</p>
+  <header class="hero">
+    <img id="logo" src="/logo.png" alt="ETOH">
+    <h1>Badge Tracker</h1>
+    <p class="sub">Enter a Roblox username to see which Eternal Towers of Hell badges that player has earned and which are still missing.</p>
+  </header>
 
-  <form id="form">
+  <form id="form" class="entry">
     <input id="user" type="text" placeholder="Roblox username" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Roblox username">
     <button id="go" type="submit">Check badges</button>
   </form>
+  <p class="note">Tip: a player’s Roblox inventory has to be public for their badges to show up.</p>
   <p id="status" role="status"></p>
+
+  <section id="loading" role="status" hidden>
+    <div class="blocks" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <p class="loading-title">Checking badges…</p>
+    <p id="fact"></p>
+  </section>
 
   <section id="results" hidden>
     <div class="summary">
@@ -91,6 +134,43 @@ button { font:inherit; cursor:pointer; }
 const $ = (s) => document.querySelector(s);
 const state = { data: null, tab: "all", q: "" };
 
+// Loading-screen flavor text: picked at random, never the same one twice in a row.
+const FACTS = [
+  "Did you know Eternal Towers of Hell was made in 2016?",
+  "EToH has over 400 towers.",
+  "There are difficulties above catastrophic, but they are considered ‘non-canon’ in EToH.",
+  "Would this website be considered ‘AI slop’?",
+  "Gimme a second….",
+  "Some old event badges gave exclusive items that are now unobtainable.",
+  "EToH used to be called JToH (Juke’s Towers of Hell), and before that it was called KToH (Kiddie’s Towers of Hell).",
+  "I had to type out every tower name manually…",
+  "Tip: a player’s Roblox inventory has to be public for their badges to show up.",
+  "There’s a Steeple of Uninstalling Roblox. Please don’t actually do it.",
+  "There’s a Tower of Rage, a Tower of Anger, and a Tower of Stress. The towers are honest about how they feel.",
+  "There’s a badge for taking 2+ hours to complete a single tower. No judgment.",
+  "Some of the Mini-Towers are barely towers at all.",
+  "Asking Roblox nicely for your badges…",
+  "Somewhere, a Citadel is judging your progress.",
+  "Counting your badges, not your falls.",
+  "Please wait. The blocks are doing their best.",
+];
+let factTimer, lastFact = -1;
+function pickFact() {
+  let i;
+  do i = Math.floor(Math.random() * FACTS.length); while (i === lastFact);
+  lastFact = i;
+  return FACTS[i];
+}
+function startFacts() {
+  const p = $("#fact");
+  p.classList.remove("out");
+  p.textContent = pickFact();
+  factTimer = setInterval(() => {
+    p.classList.add("out");
+    setTimeout(() => { p.textContent = pickFact(); p.classList.remove("out"); }, 300);
+  }, 4500);
+}
+
 function el(tag, cls, text) {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
@@ -102,7 +182,6 @@ function setStatus(msg, isError) {
   s.textContent = msg;
   s.className = isError ? "err" : "";
 }
-
 const fmt = (iso) =>
   new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 
@@ -110,25 +189,35 @@ $("#form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const name = $("#user").value.trim();
   if (!name) return;
-  $("#go").disabled = true;
+  setStatus("");
   $("#results").hidden = true;
-  setStatus("Checking badges…");
+  $("#form").hidden = true;
+  $("#loading").hidden = false;
+  startFacts();
   try {
-    const res = await fetch("/api/check?username=" + encodeURIComponent(name));
+    // keep the loading screen up for at least a moment so the text can be read
+    const [res] = await Promise.all([
+      fetch("/api/check?username=" + encodeURIComponent(name)),
+      new Promise((r) => setTimeout(r, 1500)),
+    ]);
     const json = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(json.error || "Something went wrong. Try again.");
     state.data = json;
     state.tab = "all";
-    setStatus("");
+    state.q = "";
+    $("#filter").value = "";
     render();
     $("#results").hidden = false;
+    document.body.classList.remove("landing");
   } catch (err) {
     setStatus(
       err instanceof TypeError ? "Can’t reach the tracker server. Make sure it’s running." : err.message,
       true
     );
   } finally {
-    $("#go").disabled = false;
+    clearInterval(factTimer);
+    $("#loading").hidden = true;
+    $("#form").hidden = false;
   }
 });
 
@@ -170,6 +259,7 @@ function render() {
   const grid = $("#grid");
   grid.replaceChildren();
   if (!shown.length) grid.append(el("p", "empty", "No badges match."));
+
   const groups = new Map();
   for (const b of shown) {
     if (!groups.has(b.category)) groups.set(b.category, []);
@@ -182,27 +272,27 @@ function render() {
     const inner = el("div", "grid");
     grid.append(h, inner);
     for (const b of items) {
-    const card = el("article", "badge" + (b.awarded ? " owned" : ""));
-    if (b.icon) {
-      const img = el("img");
-      img.src = b.icon;
-      img.alt = "";
-      img.width = img.height = 64;
-      img.loading = "lazy";
-      card.append(img);
-    } else {
-      card.append(el("div", "ph"));
-    }
-    const text = el("div");
-    const desc = el("p", "desc", b.description);
-    desc.title = b.description;
-    text.append(
-      el("h3", null, b.title),
-      ...(b.description ? [desc] : []),
-      el("p", "when", b.awarded ? (b.awarded === true ? "Earned" : "Earned " + fmt(b.awarded)) : "Not earned yet")
-    );
-    card.append(text);
-    inner.append(card);
+      const card = el("article", "badge" + (b.awarded ? " owned" : ""));
+      if (b.icon) {
+        const img = el("img");
+        img.src = b.icon;
+        img.alt = "";
+        img.width = img.height = 64;
+        img.loading = "lazy";
+        card.append(img);
+      } else {
+        card.append(el("div", "ph"));
+      }
+      const text = el("div");
+      text.append(el("h3", null, b.title));
+      if (b.description) {
+        const desc = el("p", "desc", b.description);
+        desc.title = b.description;
+        text.append(desc);
+      }
+      text.append(el("p", "when", b.awarded ? (b.awarded === true ? "Earned" : "Earned " + fmt(b.awarded)) : "Not earned yet"));
+      card.append(text);
+      inner.append(card);
     }
   }
 }
